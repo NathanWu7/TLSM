@@ -92,19 +92,19 @@ class FeatureMapping(nn.Module):
 
             nn.Linear(512, 512),
             nn.LeakyReLU(),     
-            nn.Dropout(0.2),
+            nn.Dropout(0.1),
 
             nn.Linear(512, 512),
             nn.LeakyReLU(),   
-            nn.Dropout(0.2),
+            nn.Dropout(0.1),
             
             nn.Linear(512, 512),
             nn.LeakyReLU(),  
-            nn.Dropout(0.2),  
+            nn.Dropout(0.1),  
 
             nn.Linear(512, 512),
             nn.LeakyReLU(),  
-            nn.Dropout(0.2),
+            nn.Dropout(0.1),
             
             nn.Linear(512, latent_size),   
         )
@@ -113,36 +113,31 @@ class FeatureMapping(nn.Module):
         return x    
         
 class Discriminator(nn.Module):
-    def __init__(self):
+    def __init__(self, latent_size = 32):
         super(Discriminator,self).__init__()
         self.main = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3,stride=2,padding=1), ##64x64
-            nn.BatchNorm2d(8),
-            nn.LeakyReLU(),
-            
-            nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3,stride=2,padding=1), ##32
-            nn.BatchNorm2d(16),
+            nn.Linear(latent_size, 512),
             nn.LeakyReLU(),
 
+            nn.Linear(512, 512),
+            nn.LeakyReLU(),     
+            nn.Dropout(0.1),
 
-            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3,stride=2,padding=1), ##16
-            nn.BatchNorm2d(32),
-            nn.LeakyReLU(),
+            nn.Linear(512, 512),
+            nn.LeakyReLU(),   
+            nn.Dropout(0.1),
+            
+            nn.Linear(512, 512),
+            nn.LeakyReLU(),  
+            nn.Dropout(0.1),  
 
+            nn.Linear(512, 512),
+            nn.LeakyReLU(),  
+            nn.Dropout(0.1),
             
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3,stride=2,padding=1), ##8
-            nn.BatchNorm2d(64),
-            nn.LeakyReLU(),
-
-
-            nn.Flatten(),
-            
-            nn.Linear(8*8*64, 64),
-            nn.LeakyReLU(),
-            
-            
-            nn.Linear(64,1),
+            nn.Linear(512, 1),   
         )
+
     def forward(self, x):
         x = self.main(x)
         x = torch.sigmoid(x)
