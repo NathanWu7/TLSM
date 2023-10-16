@@ -1,4 +1,5 @@
 import torch
+import random
 from torch import optim
 from torch.nn import functional as F
 import torch.nn 
@@ -17,19 +18,37 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--data-dir', default='data/tactile_pair/', type=str, help='path to the data')
 parser.add_argument('--data-source', default='tactile2', type=str, help='source')
 parser.add_argument('--data-goal', default='tactile1', type=str, help='destination ')
-parser.add_argument('--batch-size', default=64, type=int)
-parser.add_argument('--num-epochs', default=5000, type=int)
+parser.add_argument('--batch-size', default=128, type=int)
+parser.add_argument('--num-epochs', default=10000, type=int)
 parser.add_argument('--num-workers', default=4, type=int)
 parser.add_argument('--learning-rate', default=0.0001, type=float)
 parser.add_argument('--content-latent-size', default=32, type=int)
 
 args = parser.parse_args()
 
+
 Model_R = VAE
 Model_S = VAE
 Model_D = Discriminator
 Model_M = FeatureMapping
 direction = args.data_source[-1]+args.data_goal[-1]
+
+def set_seed(seed=0):
+    # Python random module
+    random.seed(seed)
+    
+    # Numpy
+    np.random.seed(seed)
+    
+    # PyTorch
+    torch.manual_seed(seed)
+    
+    # If you are using CUDA
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
 def producer(x,y, model_R ,model_M,model_S):
     mu, logsigma = model_R.encoder(x)
@@ -59,12 +78,16 @@ def Discriminator_loss(contentcode_y_gt, contentcode_y, model_D, device):
     return real_loss + fake_loss
     
 def main():
+    set_seed(0)
     # create direc
     if not os.path.exists("checkpoints"):
         os.makedirs("checkpoints")
 
     if not os.path.exists('checkimages'):
         os.makedirs("checkimages")
+
+    if not os.path.exists('checkimages/final'):
+        os.makedirs("checkimages/final")
 
     # create dataset and loader
     transform = transforms.Compose([transforms.ToTensor()])
@@ -89,8 +112,8 @@ def main():
     model_M = Model_M()
     
     model_D = model_D.to(device)
-    model_M = model_M.to(device)
-    optimizer_D = optim.Adam(model_D.parameters(), lr=args.learning_rate * 0.01)
+    model_M = model_M.to(device)•••••••••
+    optimizer_D = optim.Adam(model_D.parameters(), lr=args.learning_rate)
     optimizer_M = optim.Adam(model_M.parameters(), lr=args.learning_rate)
     
     
@@ -105,15 +128,15 @@ def main():
                 contentcode_y_gt, contentcode_y = producer(imgs[0],imgs[1], model_R ,model_M,model_S)
 
                 optimizer_M.zero_grad()
-                #mloss = match_loss(contentcode_y,model_D,device)
+                mloss = match_loss(contentcode_y,model_D,device)
                 closs = content_loss(contentcode_y_gt, contentcode_y) 
-                tfloss = closs #+mloss
+                tfloss = closs + mloss
                 tfloss.backward(retain_graph=True)
                 optimizer_M.step()               
                 
                 contentcode_y_gt, contentcode_y = contentcode_y_gt.detach(), contentcode_y.detach()
                 dloss = Discriminator_loss(contentcode_y_gt, contentcode_y, model_D, device)
-                if dloss > 0.35:
+                if batch_count % 20 == 0:
                     optimizer_D.zero_grad()
                     dloss.backward()
                     optimizer_D.step()
@@ -122,7 +145,7 @@ def main():
                 
 
                 # write log
-                #writer.add_scalar('mloss', mloss.item(), batch_count)
+                writer.add_scalar('mloss', mloss.item(), batch_count)
                 writer.add_scalar('closs', closs.item(), batch_count)
                 writer.add_scalar('dloss', dloss.item(), batch_count)
 

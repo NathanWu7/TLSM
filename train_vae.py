@@ -1,4 +1,5 @@
 import torch
+import random
 from torch import optim
 from torch.nn import functional as F
 import torch.nn 
@@ -22,12 +23,30 @@ parser.add_argument('--batch-size', default=256, type=int)
 parser.add_argument('--num-epochs', default=1000, type=int)
 parser.add_argument('--num-workers', default=4, type=int)
 parser.add_argument('--learning-rate', default=0.001, type=float)
-parser.add_argument('--beta', default=50, type=int)
+parser.add_argument('--beta', default=20, type=int)
 parser.add_argument('--content-latent-size', default=32, type=int)
 
 args = parser.parse_args()
 
 Model_G = VAE
+
+def set_seed(seed=0):
+    # Python random module
+    random.seed(seed)
+    
+    # Numpy
+    np.random.seed(seed)
+    
+    # PyTorch
+    torch.manual_seed(seed)
+    
+    # If you are using CUDA
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
 
 
 def vae_loss(x, mu, logsigma, recon_x, beta=1):
@@ -48,12 +67,16 @@ def forward_loss(x, model, beta):
     
     
 def main():
+    set_seed(0)
     # create direc
     if not os.path.exists("checkpoints"):
         os.makedirs("checkpoints")
 
     if not os.path.exists('checkimages'):
         os.makedirs("checkimages")
+
+    if not os.path.exists('checkimages/'+args.data_tag):
+        os.makedirs("checkimages/"+args.data_tag)
 
     # create dataset and loader
     transform = transforms.Compose([transforms.ToTensor()])
@@ -67,7 +90,6 @@ def main():
     optimizer_G = optim.Adam(model_G.parameters(), lr=args.learning_rate)
     writer = SummaryWriter()
     batch_count = 0
-    i_class = int(args.data_tag[-1])
 
     # do the training
     for i_epoch in range(args.num_epochs):
@@ -86,7 +108,7 @@ def main():
                 
         #evaluate and save
         if i_epoch % 100 == 0 :
-            torch.save(model_G.state_dict(), "./checkpoints/%d_model.pt" % (i_class))
+            torch.save(model_G.state_dict(), "./checkpoints/%d_model.pt" % (int(args.data_tag[-1])))
             test_img = imgs[0:8]
             mu,_ = model_G.encoder(test_img)
             recon_imgs = model_G.decoder(mu)
@@ -98,8 +120,8 @@ def main():
             MAE_score = F.mse_loss(all_test_img, all_recon_imgs, reduction='mean')
 
             saved_imgs = torch.cat([test_img, recon_imgs], dim=0)
-            save_image(saved_imgs, "./checkimages/class%d/%d.png" % (i_class,i_epoch), nrow=8)
-            print("class: ",i_class," epoch: ", i_epoch," MAE: ",'%.6f' % MAE_score.item())
+            save_image(saved_imgs, "./checkimages/"+args.data_tag+"/%d.png" % (i_epoch), nrow=8)
+            print(" epoch: ", i_epoch," MAE: ",'%.6f' % MAE_score.item())
         loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, drop_last = True)   
     writer.close()
 

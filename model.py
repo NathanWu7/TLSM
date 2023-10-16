@@ -111,6 +111,7 @@ class FeatureMapping(nn.Module):
     def forward(self, x):
         x = self.main(x)
         return x    
+
         
 class Discriminator(nn.Module):
     def __init__(self, latent_size = 32):
