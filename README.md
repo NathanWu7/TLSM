@@ -7,6 +7,21 @@ pip install -r requirements.txt
 ```
 
 ## Usage
+1. Data preparation
 ```bash
-python3 train.py
+mkdir data/tatcile
+mkdir data/tactile_pair
+```
+for the data of senser 0
+put unpaired data in data/tactile/tactile0
+put paired data in data/tactile_pair/tactile0
+
+2. Tactile VAE training
+```bash
+python3 train_vae.py
+```
+
+3. Tactile LSM training
+```bash
+python3 train_mapping.py
 ```
