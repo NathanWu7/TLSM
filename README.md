@@ -12,9 +12,9 @@ pip install -r requirements.txt
 mkdir data/tatcile
 mkdir data/tactile_pair
 ```
-for the data of senser 0
-put unpaired data in data/tactile/tactile0
-put paired data in data/tactile_pair/tactile0
+for the data of senser 0 <br>
+put unpaired data in data/tactile/tactile0 <br>
+put paired data in data/tactile_pair/tactile0 <br>
 
 2. Tactile VAE training
 ```bash
